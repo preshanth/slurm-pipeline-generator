@@ -1,0 +1,44 @@
+[common]
+vis = example_sim.ms
+telescope = EVLA
+imsize = 1024
+cell = 8
+stokes = I
+reffreq = 1.4GHz
+phasecenter = 19:59:58.500000 +40.40.00.00000 J2000
+basename = example_run
+iterations = 5
+
+[slurm]
+account = your_account
+email = user@msu.edu
+coyote_nprocs = 40
+default_walltime = 4:00:00
+coyote_mem = 4GB
+roadrunner_mem = 32GB
+dale_mem = 16GB
+hummbee_mem = 16GB
+gpu_type = h200
+
+[coyote]
+wplanes = 1
+cfcache = example.cf
+wbawp = 1
+aterm = 0
+psterm = 1
+conjbeams = 1
+muellertype = diagonal
+dpa = 360
+field = 
+spw = *
+buffersize = 0
+oversampling = 20
+
+[roadrunner]
+# Future implementation
+
+[hummbee]
+# Future implementation
+
+[dale]
+# Future implementation
