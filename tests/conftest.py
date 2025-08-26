@@ -64,6 +64,6 @@ oversampling = 20
 def sample_def_file(temp_dir, sample_def_content):
     """Create a sample .def file for tests"""
     def_file = temp_dir / "test.def"
-    with open(def_file, 'w') as f:
+    with open(def_file, "w") as f:
         f.write(sample_def_content)
     return def_file

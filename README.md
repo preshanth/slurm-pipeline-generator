@@ -29,11 +29,8 @@ print(f"Generated {len(jobs)} job scripts")
 ## Development
 
 ```bash
-# Run tests
+# Run tests and report coverage
 pytest
-
-# Run tests with coverage
-pytest --cov=src/slurm_pipeline --cov-report=html
 
 # Format code
 black src/ tests/

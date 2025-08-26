@@ -43,7 +43,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --cov=src/slurm_pipeline --cov-report=term"
 
 [tool.black]
 line-length = 88
