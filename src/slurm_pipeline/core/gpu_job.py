@@ -18,7 +18,7 @@ from .base_job import BaseJob
 class GPUJob(BaseJob):
     """GPU-enabled SLURM job implementation"""
 
-    def __init__(self, config_parser, working_dir: str = ".", gpu_count: int = 1):
+    def __init__(self, config_parser: Any, working_dir: str = ".", gpu_count: int = 1) -> None:
         """Initialize GPU job with GPU requirements"""
         super().__init__(config_parser, working_dir)
         self.gpu_count = gpu_count

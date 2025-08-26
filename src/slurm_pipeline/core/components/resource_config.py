@@ -44,7 +44,7 @@ class ResourceConfig:
 
     def __init__(self, slurm_config: Dict[str, str]):
         self.slurm_config = slurm_config
-        self._resource_cache = {}
+        self._resource_cache: Dict[str, str] = {}
 
     def get_memory(self, memory_key: str, default: str = "8GB") -> str:
         """Get memory requirement with fallback"""
@@ -66,7 +66,7 @@ class ResourceConfig:
 
         return self.GPU_RESOURCES[gpu_type].copy()
 
-    def build_slurm_directives(self, **overrides) -> Dict[str, str]:
+    def build_slurm_directives(self, **overrides: str) -> Dict[str, str]:
         """Build SLURM directive parameters"""
         directives = {
             "account": self.slurm_config.get("account", ""),

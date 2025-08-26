@@ -25,7 +25,7 @@ class ScriptGenerator:
 {command}
 """
 
-    def __init__(self, resource_config: ResourceConfig, file_manager: FileManager):
+    def __init__(self, resource_config: ResourceConfig, file_manager: FileManager) -> None:
         self.resource_config = resource_config
         self.file_manager = file_manager
 

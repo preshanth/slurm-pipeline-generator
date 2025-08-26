@@ -23,8 +23,8 @@ class CoyoteJob(SingleJob, ArrayJob):
     """
 
     def __init__(
-        self, config_parser, working_dir: str = ".", coyote_binary: str = "coyote"
-    ):
+        self, config_parser: Any, working_dir: str = ".", coyote_binary: str = "coyote"
+    ) -> None:
         """
         Initialize CoyoteJob
 
@@ -49,7 +49,7 @@ class CoyoteJob(SingleJob, ArrayJob):
         """Return application name for parameter lookup"""
         return "coyote"
 
-    def setup_command_builder(self):
+    def setup_command_builder(self) -> None:
         """Setup coyote-specific command builder"""
         self.command_builder.set_executable(self.coyote_binary)
         self.command_builder.add_base_args(help="noprompt")
@@ -65,7 +65,7 @@ class CoyoteJob(SingleJob, ArrayJob):
         self.command_builder.add_mode_args("dryrun", cfcache=cfcache_path)
         self.command_builder.add_mode_args("fillcf", cfcache=cfcache_path)
 
-    def validate_coyote_requirements(self):
+    def validate_coyote_requirements(self) -> None:
         """Validate coyote-specific requirements"""
         # Call base validation
         self.validate_requirements()
@@ -85,7 +85,7 @@ class CoyoteJob(SingleJob, ArrayJob):
         cfcache_name = self.app_params.get("cfcache", "ps.cf")
 
         if Path(cfcache_name).is_absolute():
-            return cfcache_name
+            return str(cfcache_name)
 
         return str(self.file_manager.working_dir / cfcache_name)
 
@@ -121,7 +121,7 @@ class CoyoteJob(SingleJob, ArrayJob):
             "or current working directory."
         )
 
-    def create_parameter_files(self):
+    def create_parameter_files(self) -> None:
         """Create JSON parameter files for the worker module"""
         # Write common parameters
         with open(self.common_params_file, "w") as f:
@@ -152,26 +152,82 @@ class CoyoteJob(SingleJob, ArrayJob):
             str(self.worker_module_path), **args
         )
 
+    def _generate_single_job_with_custom_command(
+        self, job_name: str, command: List[str], memory_key: str, dependency: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Generate a single job with a custom command"""
+        # Get base job configuration
+        job_config = self.get_base_job_config(job_name, memory_key)
+        
+        # Add dependency if specified
+        if dependency:
+            job_config["dependency"] = f"afterok:{dependency}"
+        
+        # Generate script
+        script_content = self.script_generator.generate_script(
+            job_config, command, ""
+        )
+        
+        # Write script to file
+        script_filename = f"{job_name}.sh"
+        script_path = self.file_manager.write_script(script_content, script_filename)
+        
+        return {
+            "type": "single",
+            "job_name": job_name,
+            "script_path": script_path,
+            "depends_on": dependency,
+        }
+
+    def _generate_array_job_with_custom_command(
+        self, job_name: str, command: List[str], memory_key: str, array_range: str, dependency: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Generate an array job with a custom command"""
+        # Get base job configuration
+        job_config = self.get_base_job_config(job_name, memory_key)
+        
+        # Override log paths for array jobs
+        output_log, error_log = self.file_manager.get_log_paths(
+            job_name, array_job=True
+        )
+        job_config.update(
+            {"output": output_log, "error": error_log, "array_range": array_range}
+        )
+        
+        # Add dependency if specified
+        if dependency:
+            job_config["dependency"] = f"afterok:{dependency}"
+        
+        # Generate script
+        script_content = self.script_generator.generate_script(
+            job_config, command, ""
+        )
+        
+        # Write script to file
+        script_filename = f"{job_name}.sh"
+        script_path = self.file_manager.write_script(script_content, script_filename)
+        
+        return {
+            "type": "array",
+            "job_name": job_name,
+            "script_path": script_path,
+            "depends_on": dependency,
+            "array_range": array_range,
+        }
+
     def generate_dryrun_job(self, dependency: Optional[str] = None) -> Dict[str, Any]:
         """Generate dryrun job (single job)"""
         basename = self.common_params["basename"]
         job_name = f"{basename}_coyote_dryrun"
-
+        
         # For dryrun, we can use the direct coyote command (no worker needed)
         # But for consistency, we'll use the worker module approach
         command = self.build_worker_command("dryrun")
-
-        # Override command builder to use worker module
-        original_command_method = self.command_builder.build_command
-        self.command_builder.build_command = lambda mode=None, extra_args=None: command
-
-        job_info = self.generate_single_job(
-            job_name=job_name, memory_key="coyote_mem", dependency=dependency
+        
+        job_info = self._generate_single_job_with_custom_command(
+            job_name, command, "coyote_mem", dependency
         )
-
-        # Restore original method
-        self.command_builder.build_command = original_command_method
-
+        
         job_info["phase"] = "dryrun"
         return job_info
 
@@ -180,23 +236,13 @@ class CoyoteJob(SingleJob, ArrayJob):
         basename = self.common_params["basename"]
         job_name = f"{basename}_coyote_fillcf"
         array_range = f"0-{self.nprocs - 1}"
-
+        
         command = self.build_worker_command("fillcf")
-
-        # Override command builder to use worker module
-        original_command_method = self.command_builder.build_command
-        self.command_builder.build_command = lambda mode=None, extra_args=None: command
-
-        job_info = self.generate_array_job(
-            job_name=job_name,
-            memory_key="coyote_mem",
-            array_range=array_range,
-            dependency=dependency,
+        
+        job_info = self._generate_array_job_with_custom_command(
+            job_name, command, "coyote_mem", array_range, dependency
         )
-
-        # Restore original method
-        self.command_builder.build_command = original_command_method
-
+        
         job_info["phase"] = "fillcf"
         return job_info
 

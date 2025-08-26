@@ -14,22 +14,22 @@ import os
 class CommandBuilder:
     """Builds application commands from parameters without string templates"""
 
-    def __init__(self):
-        self.executable = None
-        self.base_args = {}
-        self.mode_args = {}
+    def __init__(self) -> None:
+        self.executable: Optional[str] = None
+        self.base_args: Dict[str, str] = {}
+        self.mode_args: Dict[str, Dict[str, str]] = {}
 
-    def set_executable(self, executable: str):
+    def set_executable(self, executable: str) -> "CommandBuilder":
         """Set the main executable path"""
         self.executable = str(Path(executable).resolve())
         return self
 
-    def add_base_args(self, **kwargs):
+    def add_base_args(self, **kwargs: str) -> "CommandBuilder":
         """Add base arguments that apply to all modes"""
         self.base_args.update(kwargs)
         return self
 
-    def add_mode_args(self, mode: str, **kwargs):
+    def add_mode_args(self, mode: str, **kwargs: str) -> "CommandBuilder":
         """Add mode-specific arguments"""
         if mode not in self.mode_args:
             self.mode_args[mode] = {}
@@ -64,7 +64,7 @@ class CommandBuilder:
 
         return cmd
 
-    def build_python_command(self, script_path: str, **kwargs) -> List[str]:
+    def build_python_command(self, script_path: str, **kwargs: str) -> List[str]:
         """Build Python command with --arg value format"""
         cmd = ["python3", str(script_path)]
 

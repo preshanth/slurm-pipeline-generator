@@ -18,7 +18,7 @@ class PipelineDriver:
     Manages multiple applications and their job dependencies
     """
 
-    def __init__(self, config_parser: ConfigParser, working_dir: str = "."):
+    def __init__(self, config_parser: ConfigParser, working_dir: str = ".") -> None:
         """
         Initialize pipeline driver
 
@@ -31,14 +31,14 @@ class PipelineDriver:
         self.working_dir.mkdir(parents=True, exist_ok=True)
 
         # Job registry
-        self.applications = {}  # name -> job_instance
-        self.job_scripts = {}  # job_name -> script_info
-        self.job_dependencies = {}  # job_name -> [dependencies]
+        self.applications: Dict[str, Any] = {}  # name -> job_instance
+        self.job_scripts: Dict[str, Dict[str, Any]] = {}  # job_name -> script_info
+        self.job_dependencies: Dict[str, List[str]] = {}  # job_name -> [dependencies]
 
         # Execution state
-        self.submitted_jobs = {}  # job_name -> slurm_job_id
+        self.submitted_jobs: Dict[str, str] = {}  # job_name -> slurm_job_id
 
-    def add_application(self, name: str, job_instance):
+    def add_application(self, name: str, job_instance: Any) -> None:
         """
         Add an application job to the pipeline
 
@@ -86,7 +86,7 @@ class PipelineDriver:
 
         return all_generated_jobs
 
-    def _resolve_cross_application_dependencies(self):
+    def _resolve_cross_application_dependencies(self) -> None:
         """Resolve dependencies between different applications"""
         # This would implement logic for cross-application dependencies
         # For example: roadrunner depends on coyote fillcf completion
@@ -107,7 +107,7 @@ class PipelineDriver:
                     self.job_dependencies[roadrunner_job] = []
                 self.job_dependencies[roadrunner_job].append(coyote_fillcf_job)
 
-    def print_pipeline_summary(self):
+    def print_pipeline_summary(self) -> None:
         """Print summary of the pipeline configuration"""
         print("=== Pipeline Summary ===")
         print(f"Working directory: {self.working_dir}")
@@ -148,7 +148,7 @@ class PipelineDriver:
         visited = set()
         rec_stack = set()
 
-        def has_cycle(job_name):
+        def has_cycle(job_name: str) -> bool:
             if job_name in rec_stack:
                 return True
             if job_name in visited:
@@ -189,7 +189,7 @@ class PipelineDriver:
         if not is_valid:
             raise RuntimeError(f"Pipeline validation failed: {'; '.join(errors)}")
 
-        submitted_jobs = {}
+        submitted_jobs: Dict[str, str] = {}
 
         # Submit jobs in dependency order
         submission_order = self._get_submission_order()
@@ -314,126 +314,3 @@ class PipelineDriver:
                 job_status[job_name] = "UNKNOWN"
 
         return job_status
-
-
-def test_pipeline_driver():
-    """Test PipelineDriver functionality"""
-    import tempfile
-    from pathlib import Path
-
-    print("=== Pipeline Driver Test ===\n")
-
-    # Create test .def file
-    def_content = """[common]
-vis = pipeline_test.ms
-telescope = EVLA
-imsize = 512
-cell = 12
-stokes = I
-reffreq = 1.4GHz
-phasecenter = 19:59:58.500000 +40.40.00.00000 J2000
-basename = pipeline_test
-iterations = 2
-
-[slurm]
-account = test_account
-email = test@msu.edu
-coyote_nprocs = 8
-default_walltime = 3:00:00
-coyote_mem = 4GB
-
-[coyote]
-wplanes = 1
-cfcache = test.cf
-wbawp = 1
-aterm = 0
-psterm = 1
-conjbeams = 1
-muellertype = diagonal
-dpa = 360
-field = 
-spw = *
-buffersize = 0
-oversampling = 20
-"""
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir = Path(tmpdir)
-
-        # Create .def file
-        def_file = tmpdir / "test.def"
-        with open(def_file, "w") as f:
-            f.write(def_content)
-
-        # Create config parser
-        config = ConfigParser(str(def_file))
-
-        # Initialize pipeline driver
-        driver = PipelineDriver(config, str(tmpdir / "pipeline_output"))
-
-        print(f"Pipeline working directory: {driver.working_dir}")
-
-        # Mock application for testing
-        class MockCoyoteJob:
-            def __init__(self):
-                pass
-
-            def validate_requirements(self):
-                pass  # Mock validation
-
-            def generate_jobs(self):
-                return [
-                    {
-                        "job_name": "pipeline_test_coyote_dryrun",
-                        "type": "single",
-                        "phase": "dryrun",
-                        "script_path": str(tmpdir / "dryrun.sh"),
-                        "depends_on": None,
-                    },
-                    {
-                        "job_name": "pipeline_test_coyote_fillcf",
-                        "type": "array",
-                        "phase": "fillcf",
-                        "script_path": str(tmpdir / "fillcf.sh"),
-                        "depends_on_job": "pipeline_test_coyote_dryrun",
-                    },
-                ]
-
-        # Create mock scripts
-        for script_name in ["dryrun.sh", "fillcf.sh"]:
-            script_path = tmpdir / script_name
-            script_path.write_text('#!/bin/bash\necho "mock script"')
-            script_path.chmod(0o755)
-
-        # Add mock application
-        mock_coyote = MockCoyoteJob()
-        driver.add_application("coyote", mock_coyote)
-
-        print(f"Added applications: {list(driver.applications.keys())}")
-
-        # Generate scripts
-        generated_jobs = driver.generate_all_scripts(dry_run=True)
-
-        print(f"Generated jobs for {len(generated_jobs)} applications:")
-        for app_name, jobs in generated_jobs.items():
-            print(f"  {app_name}: {len(jobs)} jobs")
-
-        # Print pipeline summary
-        driver.print_pipeline_summary()
-
-        # Test validation
-        is_valid, errors = driver.validate_pipeline()
-        print(f"\nPipeline validation: {'PASSED' if is_valid else 'FAILED'}")
-        if errors:
-            for error in errors:
-                print(f"  Error: {error}")
-
-        # Test submission order
-        submission_order = driver._get_submission_order()
-        print(f"\nSubmission order: {submission_order}")
-
-        print("\nPipelineDriver test completed successfully! ✓")
-
-
-if __name__ == "__main__":
-    test_pipeline_driver()

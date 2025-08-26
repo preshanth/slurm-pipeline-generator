@@ -13,12 +13,14 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple, Any
 from .components import CommandBuilder, ResourceConfig, FileManager, ScriptGenerator
 from .base_job import BaseJob
+from .array_job import ArrayJob
+from .gpu_job import GPUJob
 
 
 class GPUArrayJob(ArrayJob, GPUJob):
     """GPU-enabled array job using multiple inheritance"""
 
-    def __init__(self, config_parser, working_dir: str = ".", gpu_count: int = 1):
+    def __init__(self, config_parser: Any, working_dir: str = ".", gpu_count: int = 1) -> None:
         """Initialize GPU array job - calls both parent constructors"""
         # Initialize ArrayJob first (which calls BaseJob.__init__)
         ArrayJob.__init__(self, config_parser, working_dir)

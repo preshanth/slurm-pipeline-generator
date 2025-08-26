@@ -20,7 +20,7 @@ class BaseJob(ABC):
     Uses composition for clean separation of concerns
     """
 
-    def __init__(self, config_parser, working_dir: str = "."):
+    def __init__(self, config_parser: Any, working_dir: str = ".") -> None:
         """Initialize base job with composition components"""
         self.config = config_parser
         self.common_params = config_parser.get_common_params()
@@ -42,7 +42,7 @@ class BaseJob(ABC):
         pass
 
     @abstractmethod
-    def setup_command_builder(self):
+    def setup_command_builder(self) -> None:
         """Setup application-specific command builder configuration"""
         pass
 
@@ -51,7 +51,7 @@ class BaseJob(ABC):
         """Generate all job configurations for this application"""
         pass
 
-    def validate_requirements(self):
+    def validate_requirements(self) -> None:
         """Validate that all required parameters are present"""
         # Base validation - can be extended by subclasses
         required_common = ["vis", "basename"]

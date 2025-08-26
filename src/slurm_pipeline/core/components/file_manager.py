@@ -14,7 +14,7 @@ import os
 class FileManager:
     """Handles file operations and naming conventions"""
 
-    def __init__(self, working_dir: str, basename: str):
+    def __init__(self, working_dir: str, basename: str) -> None:
         self.working_dir = Path(working_dir).resolve()
         self.basename = basename
         self.logs_dir = self.working_dir / "logs"
