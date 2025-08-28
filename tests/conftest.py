@@ -67,3 +67,17 @@ def sample_def_file(temp_dir, sample_def_content):
     with open(def_file, "w") as f:
         f.write(sample_def_content)
     return def_file
+
+
+@pytest.fixture
+def mock_data_dir(temp_dir):
+    """Create a mock data directory with required VLA surface file for tests"""
+    data_dir = temp_dir / "data"
+    vla_dir = data_dir / "nrao" / "VLA"
+    vla_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create the required VLA surface file
+    vla_surface = vla_dir / "VLA.surface"
+    vla_surface.write_text("# Mock VLA surface file for testing\n")
+    
+    return str(data_dir)

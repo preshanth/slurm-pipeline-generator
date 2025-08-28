@@ -69,7 +69,7 @@ class CoyoteWorker:
             raise FileNotFoundError(f"Data directory not found: {data_dir}")
         
         # Check for VLA surface file
-        vla_surface = data_dir / "nrao" / "VLA" / "vla.surface"
+        vla_surface = data_dir / "nrao" / "VLA" / "VLA.surface"
         if not vla_surface.exists():
             raise FileNotFoundError(f"VLA surface file not found: {vla_surface}")
         

@@ -89,7 +89,7 @@ class FileManager:
             raise FileNotFoundError(f"Source data directory not found: {source_data}")
         
         # Check for required VLA surface file
-        vla_surface_file = source_data / "nrao" / "VLA" / "vla.surface"
+        vla_surface_file = source_data / "nrao" / "VLA" / "VLA.surface"
         if not vla_surface_file.exists():
             raise FileNotFoundError(f"Required VLA surface file not found: {vla_surface_file}")
         
@@ -101,7 +101,7 @@ class FileManager:
         shutil.copytree(source_data, target_data)
         
         # Verify the copy was successful
-        target_vla_surface = target_data / "nrao" / "VLA" / "vla.surface"
+        target_vla_surface = target_data / "nrao" / "VLA" / "VLA.surface"
         if not target_vla_surface.exists():
             raise RuntimeError(f"Failed to copy VLA surface file to: {target_vla_surface}")
         
@@ -124,7 +124,7 @@ class FileManager:
         if not self.data_dir.exists():
             return False
         
-        vla_surface = self.data_dir / "nrao" / "VLA" / "vla.surface"
+        vla_surface = self.data_dir / "nrao" / "VLA" / "VLA.surface"
         if not vla_surface.exists():
             return False
             
