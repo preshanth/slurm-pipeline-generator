@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 import os
+import shutil
 
 
 class FileManager:
@@ -18,10 +19,12 @@ class FileManager:
         self.working_dir = Path(working_dir).resolve()
         self.basename = basename
         self.logs_dir = self.working_dir / "logs"
+        self.data_dir = self.working_dir / "data"
 
         # Ensure directories exist
         self.working_dir.mkdir(parents=True, exist_ok=True)
         self.logs_dir.mkdir(exist_ok=True)
+        self.data_dir.mkdir(exist_ok=True)
 
     def get_iteration_filename(self, filetype: str, iteration: int = 0) -> str:
         """Generate filename with iteration number"""
@@ -54,8 +57,6 @@ class FileManager:
 
     def copy_worker_module(self, source_path: str, target_name: str) -> str:
         """Copy worker module to working directory"""
-        import shutil
-
         source = Path(source_path)
         target = self.working_dir / target_name
 
@@ -66,3 +67,65 @@ class FileManager:
         target.chmod(0o755)
 
         return str(target)
+    
+    def setup_data_directory(self, source_data_dir: Optional[str] = None) -> str:
+        """
+        Set up data directory in working directory
+        
+        Args:
+            source_data_dir: Path to source data directory. If None, uses package data.
+        
+        Returns:
+            Path to data directory for CASAPATH
+        """
+        if source_data_dir:
+            source_data = Path(source_data_dir)
+        else:
+            # Use package data directory
+            package_root = Path(__file__).parent.parent.parent.parent.parent
+            source_data = package_root / "data"
+        
+        if not source_data.exists():
+            raise FileNotFoundError(f"Source data directory not found: {source_data}")
+        
+        # Check for required VLA surface file
+        vla_surface_file = source_data / "nrao" / "VLA" / "vla.surface"
+        if not vla_surface_file.exists():
+            raise FileNotFoundError(f"Required VLA surface file not found: {vla_surface_file}")
+        
+        # Copy entire data directory structure
+        target_data = self.data_dir
+        if target_data.exists():
+            shutil.rmtree(target_data)
+        
+        shutil.copytree(source_data, target_data)
+        
+        # Verify the copy was successful
+        target_vla_surface = target_data / "nrao" / "VLA" / "vla.surface"
+        if not target_vla_surface.exists():
+            raise RuntimeError(f"Failed to copy VLA surface file to: {target_vla_surface}")
+        
+        print(f"Data directory set up at: {target_data}")
+        print(f"VLA surface file available at: {target_vla_surface}")
+        
+        return str(target_data)
+    
+    def get_casapath(self) -> str:
+        """Get CASAPATH environment variable value"""
+        return str(self.data_dir)
+    
+    def validate_data_setup(self) -> bool:
+        """
+        Validate that data directory is properly set up
+        
+        Returns:
+            True if data setup is valid
+        """
+        if not self.data_dir.exists():
+            return False
+        
+        vla_surface = self.data_dir / "nrao" / "VLA" / "vla.surface"
+        if not vla_surface.exists():
+            return False
+            
+        return True

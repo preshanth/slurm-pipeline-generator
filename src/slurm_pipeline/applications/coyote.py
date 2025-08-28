@@ -42,6 +42,10 @@ class CoyoteJob(SingleJob, ArrayJob):
         self.worker_module_path = self.file_manager.working_dir / "coyote_worker.py"
         self.common_params_file = self.file_manager.working_dir / "common_params.json"
         self.app_params_file = self.file_manager.working_dir / "app_params.json"
+        
+        # Set up data directory and CASAPATH
+        self.setup_data_environment()
+        
         # Validate coyote setup
         self.validate_coyote_requirements()
 
@@ -65,6 +69,18 @@ class CoyoteJob(SingleJob, ArrayJob):
         self.command_builder.add_mode_args("dryrun", cfcache=cfcache_path)
         self.command_builder.add_mode_args("fillcf", cfcache=cfcache_path)
 
+    def setup_data_environment(self) -> None:
+        """Set up data directory and CASAPATH environment"""
+        try:
+            # Set up data directory (copies from package data if needed)
+            data_path = self.file_manager.setup_data_directory()
+            self.casapath = data_path
+            
+            print(f"CASAPATH will be set to: {self.casapath}")
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to set up data environment: {e}")
+
     def validate_coyote_requirements(self) -> None:
         """Validate coyote-specific requirements"""
         # Call base validation
@@ -79,6 +95,10 @@ class CoyoteJob(SingleJob, ArrayJob):
             raise ValueError(
                 "Missing required parameter: coyote_nprocs in [slurm] section"
             )
+        
+        # Validate data directory setup
+        if not self.file_manager.validate_data_setup():
+            raise RuntimeError("Data directory validation failed. VLA surface file not found.")
 
     def get_cfcache_path(self) -> str:
         """Get absolute path to CF cache directory"""
